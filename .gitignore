@@ -1,0 +1,27 @@
+# Ambiente e caches do Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Construção do aplicativo macOS (macos/construir.py)
+build/
+dist/
+
+# MP3s gerados pela execução pelo código; a pasta é criada automaticamente
+saidas/
+*.mp3
+
+# Peças colocadas na raiz para usar com "gerar" (podem conter dados sigilosos)
+/*.docx
+/*.doc
+/*.pdf
+
+# Segredos locais
+.env
+
+# macOS
+.DS_Store
+
+# Configurações locais do Claude Code
+.claude/

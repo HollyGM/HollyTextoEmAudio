@@ -1,0 +1,7 @@
+# Pronúncias personalizadas. Uma por linha:  termo = como deve ser lido
+# Vale para o programa todo (na interface você pode somar outras só para a sessão).
+# Linhas começadas por # são ignoradas. Não diferencia maiúsculas de minúsculas.
+#
+# Exemplos (apague o # para ativar):
+# BNDES = bê ene dê é ésse
+# Fulano de Tal = Fulâno de Tal

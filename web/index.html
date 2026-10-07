@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Texto em Áudio</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --painel: #ffffff; --borda: #d9d6cc; --texto: #1c1b19;
+    --suave: #6b675d; --acento: #1f4d7a; --acento-txt: #ffffff;
+    --acento-fraco: #e4edf6; --ok: #1d6b3a; --erro: #a4262c; --aviso: #8a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151514; --painel: #1f1f1d; --borda: #3a3936; --texto: #ecebe6;
+      --suave: #a09c90; --acento: #6fa8dc; --acento-txt: #10202f;
+      --acento-fraco: #22313f; --ok: #6fcf8f; --erro: #ff8a8f; --aviso: #e8b64c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--texto);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header, main, footer { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 28px; padding-bottom: 8px; }
+  h1 { margin: 0; font: 600 1.6rem/1.2 Georgia, "Times New Roman", serif; }
+  header p { margin: 4px 0 0; color: var(--suave); }
+  main {
+    display: grid; gap: 16px; padding-top: 16px; padding-bottom: 24px;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start;
+  }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  section.painel {
+    background: var(--painel); border: 1px solid var(--borda);
+    border-radius: 10px; padding: 16px;
+  }
+  h2 { margin: 0 0 10px; font-size: 1rem; }
+  label { display: block; font-size: .9rem; margin: 12px 0 4px; }
+  label.linha { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
+  label.linha input { margin-top: 4px; }
+  textarea, select, input[type=text], input[type=number] {
+    width: 100%; padding: 9px 10px; font: inherit; color: var(--texto);
+    background: var(--bg); border: 1px solid var(--borda); border-radius: 7px;
+  }
+  textarea#texto { min-height: 420px; resize: vertical; line-height: 1.55; }
+  textarea#pronuncias { min-height: 90px; font: .85rem/1.4 ui-monospace, Menlo, monospace; }
+  :focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  button, .botao {
+    font: inherit; cursor: pointer; padding: 9px 14px; border-radius: 7px;
+    border: 1px solid var(--borda); background: var(--painel); color: var(--texto);
+    text-decoration: none; display: inline-block;
+  }
+  button:hover, .botao:hover { border-color: var(--acento); }
+  button.primario {
+    background: var(--acento); color: var(--acento-txt); border-color: var(--acento);
+    font-weight: 600; width: 100%; padding: 12px; margin-top: 14px;
+  }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  .barra { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .contagem { color: var(--suave); font-size: .9rem; margin-left: auto; }
+  .suave { color: var(--suave); font-size: .85rem; }
+  .duo { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+  input[type=range] { width: 100%; }
+  .aviso { color: var(--aviso); } .ok { color: var(--ok); } .erro { color: var(--erro); }
+  progress { width: 100%; height: 10px; accent-color: var(--acento); }
+  #resultado { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--borda); }
+  audio { width: 100%; margin: 8px 0; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; font-size: .9rem; }
+  pre#falado {
+    white-space: pre-wrap; margin: 8px 0 0; padding: 10px; max-height: 340px;
+    overflow: auto; background: var(--bg); border: 1px solid var(--borda);
+    border-radius: 7px; font: .9rem/1.5 inherit;
+  }
+  footer { padding-bottom: 32px; color: var(--suave); font-size: .85rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Texto em Áudio</h1>
+  <p>Transforma petições e textos de sustentação oral em MP3 com leitura natural em português do Brasil.</p>
+</header>
+
+<main>
+  <section class="painel" aria-labelledby="h-texto">
+    <h2 id="h-texto">Texto</h2>
+    <textarea id="texto" spellcheck="false"
+      placeholder="Cole aqui a petição ou o texto da sustentação oral, ou envie um arquivo."></textarea>
+    <div class="barra">
+      <label class="botao" for="arquivo" style="margin:0">Enviar arquivo…</label>
+      <input id="arquivo" type="file" accept=".txt,.text,.md,.docx,.pdf" hidden>
+      <button type="button" id="limpar">Limpar</button>
+      <span class="contagem" id="contagem" aria-live="polite">0 palavras</span>
+    </div>
+    <p class="suave" id="msg-texto" role="status"></p>
+
+    <details id="det-falado">
+      <summary>Ver como o texto será lido</summary>
+      <pre id="falado"></pre>
+      <p class="suave">Confira números, siglas e expressões latinas. Se algo soar errado, corrija em “Pronúncias personalizadas”.</p>
+    </details>
+  </section>
+
+  <div>
+    <section class="painel" aria-labelledby="h-voz">
+      <h2 id="h-voz">Voz e ritmo</h2>
+      <label for="voz">Voz</label>
+      <div class="duo">
+        <select id="voz"></select>
+        <button type="button" id="amostra">Ouvir amostra</button>
+      </div>
+      <audio id="player-amostra" controls hidden></audio>
+      <p class="erro" id="erro-amostra" role="alert" hidden></p>
+
+      <label for="velocidade">Velocidade: <strong id="vel-rotulo">normal</strong></label>
+      <input id="velocidade" type="range" min="-30" max="50" step="5" value="0">
+
+      <label for="pausa">Pausa entre parágrafos</label>
+      <select id="pausa">
+        <option value="400">Curta</option>
+        <option value="700" selected>Normal</option>
+        <option value="1200">Longa</option>
+      </select>
+
+      <label for="limite">Tempo disponível na tribuna (minutos, opcional)</label>
+      <input id="limite" type="number" min="1" max="600" inputmode="numeric" placeholder="ex.: 15">
+      <p class="suave" id="estimativa" aria-live="polite"></p>
+    </section>
+
+    <section class="painel" style="margin-top:16px" aria-labelledby="h-leitura">
+      <h2 id="h-leitura">Leitura do texto</h2>
+      <label for="siglas">Siglas (STF, STJ, CPC…)</label>
+      <select id="siglas">
+        <option value="extenso">Por extenso (Supremo Tribunal Federal)</option>
+        <option value="letras">Soletradas (S T F)</option>
+      </select>
+      <label class="linha"><input type="checkbox" id="omitir_referencias">
+        <span>Não ler referências como “(fls. 12)” e “(Id. 123456)”</span></label>
+      <label class="linha"><input type="checkbox" id="omitir_numeracao" checked>
+        <span>Não ler a numeração dos tópicos (“I –”, “1.”, “a)”)</span></label>
+      <label class="linha"><input type="checkbox" id="normalizar_volume" checked>
+        <span>Igualar o volume do áudio</span></label>
+      <details>
+        <summary>Pronúncias personalizadas</summary>
+        <textarea id="pronuncias" spellcheck="false"
+          maxlength="20000"
+          placeholder="Uma por linha:&#10;termo = como deve ser lido&#10;BNDES = bê ene dê é ésse"></textarea>
+      </details>
+    </section>
+
+    <section class="painel" style="margin-top:16px" aria-labelledby="h-gerar">
+      <h2 id="h-gerar">Gerar</h2>
+      <label for="titulo">Nome do arquivo</label>
+      <input id="titulo" type="text" maxlength="120" placeholder="ex.: Sustentação oral – Apelação 1234">
+      <button type="button" id="gerar" class="primario">Gerar MP3</button>
+      <div id="andamento" hidden style="margin-top:12px">
+        <progress id="progresso" max="100" value="0"></progress>
+        <p class="suave" id="msg-progresso" role="status"></p>
+      </div>
+      <p class="erro" id="erro" role="alert" hidden></p>
+      <div id="resultado" hidden>
+        <strong class="ok">Áudio pronto</strong>
+        <audio id="player" controls></audio>
+        <p class="suave" id="info-resultado"></p>
+        <a class="botao" id="baixar" download>Baixar MP3</a>
+        <p class="suave">Uma cópia fica na pasta <code id="pasta-saidas">saidas/</code>.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  O texto é processado neste computador, mas a voz é gerada pelo serviço online da Microsoft (edge-tts),
+  que recebe o texto. Não use para peças sob sigilo sem antes trocar por um motor local.
+  Só o MP3 é gravado em disco; o texto não.
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+// "limite" não entra: o tempo de tribuna é de cada peça, não uma preferência.
+const CAMPOS_SALVOS = ["voz", "velocidade", "pausa", "siglas",
+  "omitir_referencias", "omitir_numeracao", "normalizar_volume", "pronuncias"];
+
+function guardar() {
+  try {
+    const d = {};
+    for (const id of CAMPOS_SALVOS) {
+      const el = $(id);
+      d[id] = el.type === "checkbox" ? el.checked : el.value;
+    }
+    localStorage.setItem("texto-audio", JSON.stringify(d));   // nunca o texto da peça
+  } catch (e) { /* armazenamento indisponível: segue sem lembrar */ }
+}
+function restaurar() {
+  try {
+    const d = JSON.parse(localStorage.getItem("texto-audio") || "{}");
+    for (const id of CAMPOS_SALVOS) {
+      if (!(id in d)) continue;
+      const el = $(id);
+      if (el.type === "checkbox") {
+        if (typeof d[id] === "boolean") el.checked = d[id];
+      } else if (el.tagName === "SELECT") {
+        if ([...el.options].some((o) => o.value === d[id])) el.value = d[id];
+      } else if (el.type === "range") {
+        const valor = Number(d[id]);
+        if (Number.isFinite(valor)) el.value = Math.min(Number(el.max), Math.max(Number(el.min), valor));
+      } else if (typeof d[id] === "string") el.value = d[id];
+    }
+  } catch (e) { /* ignora */ }
+}
+
+const velocidade = () => parseInt($("velocidade").value, 10);
+function rotuloVelocidade() {
+  const v = velocidade();
+  $("vel-rotulo").textContent = v === 0 ? "normal" : (v > 0 ? `+${v}%` : `${v}%`);
+}
+function pedido() {
+  return {
+    texto: $("texto").value,
+    voz: $("voz").value,
+    velocidade: velocidade(),
+    siglas: $("siglas").value,
+    omitir_referencias: $("omitir_referencias").checked,
+    omitir_numeracao: $("omitir_numeracao").checked,
+    pausa_paragrafo_ms: parseInt($("pausa").value, 10),
+    normalizar_volume: $("normalizar_volume").checked,
+    titulo: $("titulo").value.trim() || "Áudio",
+    pronuncias: $("pronuncias").value,
+  };
+}
+function formatarDuracao(min) {
+  const total = Math.round(min * 60);
+  const m = Math.floor(total / 60), s = total % 60;
+  return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`;
+}
+
+async function requisitar(url, opcoes = {}, tempo = 30000) {
+  const controlador = new AbortController();
+  const cancelar = () => controlador.abort();
+  opcoes.signal?.addEventListener("abort", cancelar, {once: true});
+  if (opcoes.signal?.aborted) controlador.abort();
+  const prazo = setTimeout(cancelar, tempo);
+  let r;
+  try {
+    r = await fetch(url, {...opcoes, signal: controlador.signal});
+  } catch (e) {
+    if (e.name === "AbortError" && opcoes.signal?.aborted) throw e;
+    throw new Error(e.name === "AbortError"
+      ? "O servidor demorou a responder. Tente novamente."
+      : "Não consegui falar com o aplicativo. Confira se ele continua aberto.");
+  } finally {
+    clearTimeout(prazo);
+    opcoes.signal?.removeEventListener("abort", cancelar);
+  }
+  if (!r.ok) {
+    let msg = `Erro ${r.status}`;
+    try {
+      const j = await r.json();
+      if (typeof j.detail === "string") msg = j.detail;
+      else if (Array.isArray(j.detail)) msg = "Confira o tamanho do texto e as opções de leitura.";
+    } catch (e) {}
+    const erro = new Error(msg); erro.status = r.status; throw erro;
+  }
+  return r;
+}
+async function chamar(url, corpo, opcoes = {}) {
+  return (await requisitar(url, {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(corpo), ...opcoes,
+  })).json();
+}
+
+// ---- pré-visualização e estimativa (com debounce) -------------------------
+let temporizador = null, abortar = null, ultimoPreparo = null, revisaoPreparo = 0;
+function agendarPreparo() {
+  clearTimeout(temporizador);
+  revisaoPreparo++;
+  if (abortar) abortar.abort();
+  ultimoPreparo = null;
+  temporizador = setTimeout(preparar, 500);
+}
+async function preparar() {
+  clearTimeout(temporizador);
+  const revisao = ++revisaoPreparo;
+  if (abortar) abortar.abort();
+  if (!$("texto").value.trim()) {
+    ultimoPreparo = null;
+    $("contagem").textContent = "0 palavras";
+    $("estimativa").textContent = "";
+    $("falado").textContent = "";
+    return;
+  }
+  const controle = new AbortController(); abortar = controle;
+  try {
+    const resposta = await chamar("/api/preparar", pedido(), {signal: controle.signal});
+    if (revisao !== revisaoPreparo) return;
+    ultimoPreparo = resposta;
+  } catch (e) {
+    if (e.name !== "AbortError" && revisao === revisaoPreparo) {
+      ultimoPreparo = null;
+      $("estimativa").textContent = e.message;
+    }
+    return;
+  }
+  $("contagem").textContent = `${ultimoPreparo.palavras.toLocaleString("pt-BR")} palavras`;
+  $("falado").textContent = ultimoPreparo.texto_falado;
+  atualizarEstimativa();
+}
+function atualizarEstimativa() {
+  const el = $("estimativa");
+  el.className = "suave";
+  if (!ultimoPreparo) { el.textContent = ""; return; }
+  const est = ultimoPreparo.minutos;
+  let txt = `Duração estimada: ${formatarDuracao(est)} (aproximada).`;
+  const limite = parseFloat($("limite").value);
+  if (limite > 0) {
+    if (est <= limite) {
+      txt += ` Cabe nos ${limite} min, com folga de ${formatarDuracao(limite - est)}.`;
+      el.className = "suave ok";
+    } else {
+      el.className = "suave aviso";
+      txt += ` Excede os ${limite} min em ${formatarDuracao(est - limite)}.`;
+      // fala/(1+v) + pausas = limite  ->  v = fala/(limite - pausas) - 1
+      const sobra = limite - ultimoPreparo.minutos_pausas;
+      const necessaria = sobra > 0 ? Math.ceil((ultimoPreparo.minutos_fala_normal / sobra - 1) * 100) : Infinity;
+      txt += necessaria <= 50
+        ? ` Para caber, use velocidade de cerca de +${Math.max(necessaria, 0)}%.`
+        : " Só acelerar não resolve (a voz ficaria rápida demais); vale reduzir o texto.";
+    }
+  }
+  el.textContent = txt;
+}
+
+// ---- arquivo ---------------------------------------------------------------
+let importacao = null, revisaoTexto = 0;
+$("arquivo").addEventListener("change", async (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  const msg = $("msg-texto");
+  if (f.size > 20 * 1024 * 1024) {
+    msg.className = "suave erro"; msg.textContent = "Arquivo maior que 20 MB.";
+    ev.target.value = ""; return;
+  }
+  if (importacao) importacao.abort();
+  const controle = new AbortController(); importacao = controle;
+  const revisao = revisaoTexto;
+  msg.className = "suave"; msg.textContent = `Lendo ${f.name}…`;
+  const form = new FormData(); form.append("arquivo", f);
+  try {
+    const r = await requisitar("/api/extrair", {method: "POST", body: form, signal: controle.signal}, 60000);
+    const j = await r.json();
+    if (controle !== importacao || revisao !== revisaoTexto) return;
+    $("texto").value = j.texto;
+    revisaoTexto++;
+    if (!$("titulo").value) $("titulo").value = f.name.replace(/\.[^.]+$/, "").slice(0, 120);
+    msg.textContent = j.truncado ? "Arquivo acima de 400 mil caracteres: somente o começo foi carregado. Divida o documento para ouvir todo o conteúdo." : `${f.name} carregado.`;
+    if (j.truncado) msg.className = "suave aviso";
+    agendarPreparo();
+  } catch (e) {
+    if (e.name !== "AbortError" && controle === importacao) {
+      msg.className = "suave erro"; msg.textContent = e.message;
+    }
+  } finally {
+    if (controle === importacao) importacao = null;
+    ev.target.value = "";
+  }
+});
+$("limpar").addEventListener("click", () => {
+  if (importacao) { importacao.abort(); importacao = null; }
+  revisaoTexto++;
+  $("texto").value = ""; $("msg-texto").textContent = ""; preparar();
+});
+
+// ---- amostra ---------------------------------------------------------------
+let urlAmostra = null;
+$("amostra").addEventListener("click", async () => {
+  const b = $("amostra"); b.disabled = true; b.textContent = "Gerando…";
+  $("erro-amostra").hidden = true;
+  try {
+    const q = new URLSearchParams({voz: $("voz").value, velocidade: velocidade()});
+    const r = await requisitar(`/api/amostra?${q}`, {}, 60000);
+    const p = $("player-amostra");
+    if (urlAmostra) URL.revokeObjectURL(urlAmostra);
+    urlAmostra = URL.createObjectURL(await r.blob());
+    p.src = urlAmostra; p.hidden = false; p.play().catch(() => {});
+  } catch (e) { $("erro-amostra").textContent = e.message; $("erro-amostra").hidden = false; }
+  finally { b.disabled = false; b.textContent = "Ouvir amostra"; }
+});
+
+// ---- geração ----------------------------------------------------------------
+let gerando = false, tarefaAtual = null;
+try { tarefaAtual = sessionStorage.getItem("texto-audio-tarefa"); } catch (e) {}
+function lembrarTarefa(id) {
+  tarefaAtual = id;
+  try {
+    if (id) sessionStorage.setItem("texto-audio-tarefa", id);
+    else sessionStorage.removeItem("texto-audio-tarefa");
+  } catch (e) {}
+}
+async function gerarOuAcompanhar() {
+  if (gerando) return;
+  $("erro").hidden = true; $("resultado").hidden = true;
+  if (!tarefaAtual && importacao) {
+    $("erro").textContent = "Aguarde o arquivo terminar de carregar."; $("erro").hidden = false; return;
+  }
+  if (!tarefaAtual && !$("texto").value.trim()) {
+    $("erro").textContent = "Cole ou envie um texto primeiro."; $("erro").hidden = false; return;
+  }
+  if (!tarefaAtual && $("texto").value.length > 400000) {
+    $("erro").textContent = "O texto ultrapassa 400 mil caracteres. Divida-o em partes para gerar o áudio completo.";
+    $("erro").hidden = false; return;
+  }
+  gerando = true; $("gerar").disabled = true;
+  $("andamento").hidden = false; $("progresso").value = 0;
+  $("msg-progresso").textContent = "Começando…";
+  try {
+    if (!tarefaAtual) {
+      const {id} = await chamar("/api/audio", pedido());
+      lembrarTarefa(id);
+    }
+    const id = tarefaAtual;
+    let falhas = 0;
+    while (true) {
+      let s;
+      try {
+        s = await (await requisitar(`/api/audio/${id}`, {}, 10000)).json();
+        falhas = 0;
+      } catch (e) {
+        if (e.status === 404) {
+          lembrarTarefa(null);
+          throw new Error("A tarefa não está mais neste aplicativo. Confira a pasta de áudios antes de gerar novamente.");
+        }
+        if (++falhas >= 5) throw e;
+        $("msg-progresso").textContent = "Tentando recuperar o andamento…";
+        await new Promise((ok) => setTimeout(ok, Math.min(5000, falhas * 1000)));
+        continue;
+      }
+      $("progresso").value = Math.round(s.progresso * 100);
+      $("msg-progresso").textContent = s.mensagem;
+      if (s.status === "erro") { lembrarTarefa(null); throw new Error(s.erro || "Falha ao gerar o áudio."); }
+      if (s.status === "pronto") { lembrarTarefa(null); mostrarResultado(id, s); break; }
+      await new Promise((ok) => setTimeout(ok, 800));
+    }
+  } catch (e) {
+    $("erro").textContent = e.message; $("erro").hidden = false;
+  } finally {
+    gerando = false; $("gerar").disabled = false; $("andamento").hidden = true;
+    $("gerar").textContent = tarefaAtual ? "Retomar acompanhamento" : "Gerar MP3";
+  }
+}
+$("gerar").addEventListener("click", gerarOuAcompanhar);
+function mostrarResultado(id, s) {
+  const url = `/api/audio/${id}/arquivo`;
+  $("player").src = url;
+  $("baixar").href = url; $("baixar").setAttribute("download", s.arquivo || "audio.mp3");
+  $("info-resultado").textContent =
+    `${formatarDuracao(s.duracao_s / 60)} · ${(s.tamanho_bytes / 1048576).toFixed(1)} MB · ${s.arquivo}`;
+  $("resultado").hidden = false;
+  $("resultado").scrollIntoView({behavior: "smooth", block: "nearest"});
+}
+
+// ---- início -------------------------------------------------------------------
+let padraoVoz = "";
+async function iniciar() {
+  try {
+    const r = await (await requisitar("/api/vozes")).json();
+    for (const v of r.vozes) {
+      const o = document.createElement("option");
+      o.value = v.id; o.textContent = v.nome; $("voz").appendChild(o);
+    }
+    $("voz").value = r.padrao; padraoVoz = r.padrao;
+  } catch (e) { $("erro").textContent = "Não consegui falar com o servidor."; $("erro").hidden = false; }
+  restaurar();
+  if (!$("voz").value) $("voz").value = padraoVoz;   // voz salva que não existe mais
+  rotuloVelocidade();
+  $("texto").addEventListener("input", () => {
+    revisaoTexto++;
+    if (importacao) {
+      importacao.abort(); importacao = null;
+      $("msg-texto").textContent = "Importação cancelada porque o texto foi alterado.";
+    }
+    agendarPreparo();
+  });
+  for (const id of ["voz", "velocidade", "pausa", "siglas", "omitir_referencias",
+                    "omitir_numeracao", "normalizar_volume", "pronuncias", "limite"]) {
+    $(id).addEventListener("input", () => {
+      guardar();
+      if (id === "velocidade") rotuloVelocidade();
+      if (id === "limite") atualizarEstimativa(); else agendarPreparo();
+    });
+  }
+  try {
+    const info = await (await requisitar("/api/info")).json();
+    $("pasta-saidas").textContent = info.pasta_saidas;
+  } catch (e) { /* a geração exibirá falhas de conexão */ }
+  if (tarefaAtual) gerarOuAcompanhar();
+}
+iniciar();
+</script>
+</body>
+</html>
