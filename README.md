@@ -129,3 +129,7 @@ iniciar.command   abre a interface no navegador pelo código
 pronuncias.txt    correções de pronúncia padrão (o aplicativo copia para Application Support)
 saidas/           MP3 gerados pelo código (criada automaticamente; fora do git)
 ```
+
+## Licença
+
+Distribuído sob a [Licença Apache 2.0](LICENSE).
