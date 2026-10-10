@@ -226,7 +226,7 @@ def _documentos(t: str) -> str:
         t = rx.sub(_ler_documento, t)
 
     def oab(m):
-        s = f"OAB seccional de {dados.ESTADOS[m.group('uf')]}"
+        s = f"OAB seccional {dados.de_estado(m.group('uf'))}"
         if m.group("num"):
             s += f", número {m.group('num')}"
         return s
@@ -311,7 +311,7 @@ _FRACOES = {2: "meio", 3: "terço", 4: "quarto", 5: "quinto", 6: "sexto",
 def _normas_e_fracoes(t: str) -> str:
     # "REsp 1.234.567/SP": o /SP é o estado de origem
     t = re.sub(rf"(?<=\d)[ \t]*/[ \t]*({_UF})(?![\w/])",
-               lambda m: f", de {dados.ESTADOS[m.group(1)]}", t)
+               lambda m: f", {dados.de_estado(m.group(1))}", t)
     t = re.sub(r"(?i:\bfls?\.?)\s*(\d+)\s*/\s*(\d+)",
                lambda m: f"folhas {m.group(1)} a {m.group(2)}", t)
     t = _RE_SUMULA.sub(lambda m: f"{m.group(1)} {m.group(2)} do {m.group(3)}", t)
@@ -359,6 +359,39 @@ def _romano_para_int(r: str) -> int:
     return total
 
 
+# Inciso citado sem a palavra "inciso": "art. 157, § 2º, II, do CP" e
+# "art. 5º, LIV e LV, da CF". Roda depois dos ordinais e parágrafos, então o
+# trecho já está como "art. 157, parágrafo segundo, II".
+_ORDINAL_POR_EXTENSO = (r"(?:primeiro|segundo|terceiro|quarto|quinto|sexto"
+                        r"|s[ée]timo|oitavo|nono)")
+_RE_INCISO_CITADO = re.compile(
+    r"(?P<pre>\b(?i:arts?\.|artigos?)\s*(?:\d[\d.]*(?:-[A-Z])?|"
+    + _ORDINAL_POR_EXTENSO + r")"
+    r"(?:\s*,\s*(?:caput|par[áa]grafos?\s+(?:[úu]nico|"
+    + _ORDINAL_POR_EXTENSO + r"|\d+)))*\s*,\s*)"
+    rf"(?P<seq>\b(?:{_ROMANO})\b(?:\s*(?:,|e|a)\s*\b(?:{_ROMANO})\b)*)"
+    r"(?=\s*(?:[,;.:)]|$)|\s+(?:e|do|da|dos|das|c/c|combinad[oa])\b)")
+# Inciso passa de LXXVIII só em lei muito longa; o teto evita ler "CC" (200)
+# ou "DL" (550) como inciso.
+_MAIOR_INCISO = 89
+
+
+def _incisos_citados(t: str) -> str:
+    def troca(m):
+        romanos = _RE_TOKEN_ROMANO.findall(m.group("seq"))
+        valores = [_romano_para_int(r) for r in romanos]
+        if not valores or max(valores) > _MAIOR_INCISO:
+            return m.group(0)
+
+        def um(r):
+            n = _romano_para_int(r.group(0))
+            return ordinal(n) if n <= 9 else cardinal(n)
+        rotulo = "incisos" if len(romanos) > 1 else "inciso"
+        return (m.group("pre") + rotulo + " "
+                + _RE_TOKEN_ROMANO.sub(um, m.group("seq")))
+    return _RE_INCISO_CITADO.sub(troca, t)
+
+
 def _romanos_contextuais(t: str) -> str:
     def troca(m):
         inciso = m.group("kw").lower().startswith("inciso")
@@ -367,7 +400,7 @@ def _romanos_contextuais(t: str) -> str:
             n = _romano_para_int(r.group(0))
             return ordinal(n) if inciso and n <= 9 else cardinal(n)
         return m.group("kw") + " " + _RE_TOKEN_ROMANO.sub(um, m.group("seq"))
-    return _RE_ROMANO_CTX.sub(troca, t)
+    return _RE_ROMANO_CTX.sub(troca, _incisos_citados(t))
 
 
 def _maiuscula_inicial(origem: str, texto: str) -> str:
@@ -384,6 +417,9 @@ _ABREV_EXIGEM_MAIUSCULA = {
     "sras", "dr", "dra", "drs", "profa", "prof", "min", "des", "desa", "dep",
     "rel", "adv", "av",
 }
+# Em caixa alta são siglas, não abreviações: "da CF." é a Constituição Federal
+# no fim da frase, não "conforme" ("cf." e "Cf." continuam sendo "conforme").
+_ABREV_QUE_EM_CAIXA_ALTA_SAO_SIGLA = {"cf"}
 _RE_ABREV = re.compile(
     r"(?<![\w.])(" + "|".join(sorted(map(re.escape, dados.ABREVIACOES),
                                      key=len, reverse=True)) + r")\.",
@@ -420,6 +456,8 @@ def _abreviacoes(t: str) -> str:
         baixa = chave.lower()
         if baixa in _ABREV_EXIGEM_MAIUSCULA and not chave[0].isupper():
             return m.group(0)
+        if baixa in _ABREV_QUE_EM_CAIXA_ALTA_SAO_SIGLA and chave.isupper():
+            return m.group(0)
         return _maiuscula_inicial(chave, dados.ABREVIACOES[baixa])
     return _RE_ABREV.sub(troca, t)
 
@@ -446,7 +484,7 @@ def _tribunais(t: str, op: Opcoes) -> str:
     """TJSP, TRF3, TRT-2... (roda antes dos ordinais, que consumiriam o 3ª)."""
     t = _RE_TJ_UF.sub(
         lambda m: ("T J " + " ".join(m.group(1))) if op.siglas == "letras"
-        else f"Tribunal de Justiça de {dados.ESTADOS[m.group(1)]}", t)
+        else f"Tribunal de Justiça {dados.de_estado(m.group(1))}", t)
 
     def regional(m):
         n = ordinal(int(m.group(2)), feminino=True)

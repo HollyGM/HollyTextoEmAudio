@@ -151,6 +151,22 @@ ESTADOS = {
     "TO": "Tocantins",
 }
 
+# Preposição + artigo antes do nome do estado: "do Rio Grande do Norte",
+# "da Bahia", "de São Paulo". Sem isso a voz lia "Tribunal de Justiça de Rio
+# Grande do Norte".
+PREPOSICAO_ESTADO = {
+    "AC": "do", "AL": "de", "AP": "do", "AM": "do", "BA": "da", "CE": "do",
+    "DF": "do", "ES": "do", "GO": "de", "MA": "do", "MT": "de", "MS": "de",
+    "MG": "de", "PA": "do", "PB": "da", "PR": "do", "PE": "de", "PI": "do",
+    "RJ": "do", "RN": "do", "RS": "do", "RO": "de", "RR": "de", "SC": "de",
+    "SP": "de", "SE": "de", "TO": "do",
+}
+
+
+def de_estado(uf: str) -> str:
+    """'RN' -> 'do Rio Grande do Norte'; 'BA' -> 'da Bahia'; 'SP' -> 'de São Paulo'."""
+    return f"{PREPOSICAO_ESTADO[uf]} {ESTADOS[uf]}"
+
 MESES = [
     "janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
     "agosto", "setembro", "outubro", "novembro", "dezembro",

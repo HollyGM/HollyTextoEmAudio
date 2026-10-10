@@ -131,6 +131,52 @@ def test_tribunais_regionais_e_estaduais():
 
 def test_estado_depois_de_numero_de_recurso():
     assert ", de São Paulo" in n("REsp 1.234.567/SP")
+    assert ", do Rio Grande do Norte" in n("REsp 1.234.567/RN")
+
+
+@pytest.mark.parametrize("entrada, esperado", [
+    ("TJRN", "Tribunal de Justiça do Rio Grande do Norte"),
+    ("TJBA", "Tribunal de Justiça da Bahia"),
+    ("TJPB", "Tribunal de Justiça da Paraíba"),
+    ("TJAM", "Tribunal de Justiça do Amazonas"),
+    ("TJPE", "Tribunal de Justiça de Pernambuco"),
+    ("OAB/RN 10.432", "Ordem dos Advogados do Brasil seccional do Rio Grande do Norte"),
+])
+def test_preposicao_do_estado(entrada, esperado):
+    assert esperado in n(entrada)
+
+
+def test_todo_estado_tem_preposicao():
+    from texto_audio import dados
+    assert set(dados.PREPOSICAO_ESTADO) == set(dados.ESTADOS)
+    assert set(dados.PREPOSICAO_ESTADO.values()) <= {"de", "do", "da"}
+
+
+@pytest.mark.parametrize("entrada, esperado", [
+    ("art. 157, § 2º, II, do CP",
+     "artigo cento e cinquenta e sete, parágrafo segundo, inciso segundo, do Código Penal"),
+    ("art. 5º, LIV e LV, da CF",
+     "artigo quinto, incisos cinquenta e quatro e cinquenta e cinco, da Constituição Federal"),
+    ("art. 121, parágrafo único, I, do CP",
+     "artigo cento e vinte e um, parágrafo único, inciso primeiro, do Código Penal"),
+    ("art. 5º, LXVIII, da CF", "artigo quinto, inciso sessenta e oito, da Constituição Federal"),
+    ("art. 157, I a III", "artigo cento e cinquenta e sete, incisos primeiro a terceiro"),
+    ("ART. 157, § 2º, II, DO CP", "inciso segundo"),
+])
+def test_inciso_citado_sem_a_palavra_inciso(entrada, esperado):
+    assert esperado in n(entrada)
+
+
+def test_romano_fora_de_citacao_nao_vira_inciso():
+    assert "inciso" not in n("art. 186, CC e art. 927 do CC")
+    assert "Código Civil" in n("art. 186, CC")
+    assert "Dom Pedro II" in n("Dom Pedro II")
+
+
+def test_cf_em_caixa_alta_no_fim_da_frase_e_a_constituicao():
+    assert n("Viola a CF.").endswith("Constituição Federal.")
+    assert n("cf. o voto").startswith("conforme")
+    assert n("Cf. o voto").startswith("Conforme")
 
 
 def test_latim():

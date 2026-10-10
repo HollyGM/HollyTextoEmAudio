@@ -38,10 +38,12 @@ Opções: `--voz`, `--velocidade` (-50 a 100, em %), `--pausa` (ms entre parágr
 |---|---|
 | `art. 5º, inciso XXXV, da CF/88` | artigo quinto, inciso trinta e cinco, da Constituição Federal de mil novecentos e oitenta e oito |
 | `art. 1.015, § 1º, do CPC` | artigo mil e quinze, parágrafo primeiro, do Código de Processo Civil |
+| `art. 157, § 2º, II, do CP` | artigo cento e cinquenta e sete, parágrafo segundo, inciso segundo, do Código Penal |
 | `Processo nº 1234567-89.2023.8.26.0100` | número lido dígito a dígito, em grupos |
 | `10/03/2024`, `14h30`, `1,5%` | dez de março de dois mil e vinte e quatro, catorze horas e trinta minutos, um vírgula cinco por cento |
 | `R$ 10.000,00 (dez mil reais)` | dez mil reais |
 | `REsp 1.234.567/SP`, `TJSP`, `TRF3` | Recurso Especial …, de São Paulo; Tribunal de Justiça de São Paulo; Tribunal Regional Federal da terceira Região |
+| `TJRN`, `TJBA`, `OAB/RN` | Tribunal de Justiça do Rio Grande do Norte; Tribunal de Justiça da Bahia; Ordem dos Advogados do Brasil seccional do Rio Grande do Norte |
 | `Exmo. Sr. Dr.`, `fls.`, `c/c`, `e/ou` | Excelentíssimo Senhor Doutor, folhas, combinado com, e ou |
 | `data venia`, `caput`, `habeas corpus` | respelling para a voz falar como um advogado brasileiro |
 | `EXCELENTÍSSIMO SENHOR…` (título em caixa alta) | minúsculas (a voz soletraria "DO", "DA") |
