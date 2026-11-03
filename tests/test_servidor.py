@@ -287,3 +287,11 @@ def test_pdf_sem_texto_explica_que_e_imagem(cliente):
     r = cliente.post("/api/extrair", files={
         "arquivo": ("scan.pdf", _pdf_minimo(""))})
     assert r.status_code == 415 and "OCR" in r.json()["detail"]
+
+
+def test_verificar_servico_de_voz(cliente, monkeypatch):
+    async def verificar():
+        return {"voz": "ok", "mensagem": "tudo certo"}
+
+    monkeypatch.setattr(servidor.verificacao, "verificar", verificar)
+    assert cliente.get("/api/verificar").json() == {"voz": "ok", "mensagem": "tudo certo"}

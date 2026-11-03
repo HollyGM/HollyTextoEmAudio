@@ -75,7 +75,7 @@ def construir(instalar: bool = False, ffmpeg_dir: Path | None = None) -> Path:
         "CFBundleName": "Texto em Áudio",
         "CFBundleDisplayName": "Texto em Áudio",
         "CFBundleIdentifier": "com.holly.textoemaudio",
-        "CFBundleShortVersionString": "1.1.0",
+        "CFBundleShortVersionString": "1.2.0",
         "CFBundleVersion": "110",
         "CFBundleIconFile": "AppIcon.icns",
         "LSMinimumSystemVersion": "13.0",

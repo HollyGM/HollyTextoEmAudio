@@ -168,6 +168,13 @@
         <p class="suave">Uma cópia fica na pasta <code id="pasta-saidas">saidas/</code>.</p>
       </div>
     </section>
+
+    <section class="painel" style="margin-top:16px" aria-labelledby="h-servico">
+      <h2 id="h-servico">Serviço de voz</h2>
+      <p class="suave" style="margin:0 0 10px">Se a voz parar de funcionar, verifique aqui se a Microsoft mudou o acesso e se já existe correção.</p>
+      <button type="button" id="verificar">Verificar serviço de voz</button>
+      <p class="suave" id="msg-verificar" role="status" hidden></p>
+    </section>
   </div>
 </main>
 
@@ -387,6 +394,20 @@ $("amostra").addEventListener("click", async () => {
     p.src = urlAmostra; p.hidden = false; p.play().catch(() => {});
   } catch (e) { $("erro-amostra").textContent = e.message; $("erro-amostra").hidden = false; }
   finally { b.disabled = false; b.textContent = "Ouvir amostra"; }
+});
+
+// ---- serviço de voz -----------------------------------------------------------
+$("verificar").addEventListener("click", async () => {
+  const b = $("verificar"), msg = $("msg-verificar");
+  b.disabled = true; b.textContent = "Verificando…";
+  msg.className = "suave"; msg.textContent = "Testando a voz e procurando versão nova…"; msg.hidden = false;
+  try {
+    const r = await (await requisitar("/api/verificar", {}, 60000)).json();
+    msg.className = "suave " + (r.voz === "recusada" ? "erro"
+      : r.voz === "falhou" || r.atualizacao_disponivel || !r.publicada ? "aviso" : "ok");
+    msg.textContent = r.mensagem;
+  } catch (e) { msg.className = "suave erro"; msg.textContent = e.message; }
+  finally { b.disabled = false; b.textContent = "Verificar serviço de voz"; }
 });
 
 // ---- geração ----------------------------------------------------------------

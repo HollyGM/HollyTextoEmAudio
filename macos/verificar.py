@@ -49,7 +49,7 @@ def verificar(app: Path, online: bool = False) -> None:
                 assert "mil reais" in preparo["texto_falado"]
                 assert "artigo quinto" in preparo["texto_falado"]
                 info = obter("/api/info")
-                assert info["versao"] == "1.1.0"
+                assert info["versao"] == "1.2.0"
                 assert info["pasta_saidas"] == str(raiz / "audios")
                 assert (raiz / "dados/pronuncias.txt").exists()
                 print("App empacotado: interface, API, pronúncias e normalização OK.")
@@ -71,6 +71,10 @@ def verificar(app: Path, online: bool = False) -> None:
                     assert resultado["duracao_s"] > 1
                     assert (raiz / "audios" / resultado["arquivo"]).read_bytes() == mp3
                     print(f"Voz online + ffmpeg incorporado + download OK ({len(mp3)} bytes).")
+                    diagnostico = obter("/api/verificar")
+                    assert diagnostico["voz"] == "ok", diagnostico["mensagem"]
+                    assert diagnostico["publicada"], diagnostico["mensagem"]
+                    print(f"Verificação do serviço de voz OK: {diagnostico['mensagem']}")
             finally:
                 processo.terminate()
                 try:

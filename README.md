@@ -65,7 +65,7 @@ Os respellings de latim em `dados.py` (`PRONUNCIAS_PADRAO`, como "cápute" para 
 ## Limites que você precisa conhecer
 
 - **Sigilo.** A voz vem do serviço online de voz neural da Microsoft (biblioteca `edge-tts`), e **o texto é enviado a esses servidores**. Não use, como está, para peças sob segredo de justiça ou com dados sensíveis. O restante (normalização, montagem do MP3, interface) roda só neste computador, e o servidor escuta apenas em `127.0.0.1`. Para trocar por um motor local ou por uma API contratada (Azure, Google, OpenAI, ElevenLabs, Piper), escreva uma classe com o método `sintetizar` em `texto_audio/motores.py`: o resto do programa não muda.
-- **Serviço não oficial.** O `edge-tts` usa o recurso "ler em voz alta" do Edge sem chave de API; a Microsoft pode alterá-lo ou limitá-lo a qualquer momento.
+- **Serviço não oficial.** O `edge-tts` usa o recurso "ler em voz alta" do Edge sem chave de API; a Microsoft pode alterá-lo ou limitá-lo a qualquer momento. Se a voz parar com erro 403, use o botão “Verificar serviço de voz” e siga [Quando a Microsoft mudar o acesso às vozes](#quando-a-microsoft-mudar-o-acesso-às-vozes).
 - **Estimativa de duração** é aproximada: errou cerca de 2% nos dois textos usados para calibrá-la, e em outros textos pode variar mais. A duração real aparece depois de gerar.
 - **PDF escaneado** (imagem) não tem texto: faça OCR antes. **`.doc` antigo** não é lido: salve como `.docx`.
 - **MP3 final:** mono, 24 kHz, 64 kbps (o suficiente para voz; ~0,5 MB por minuto), com volume igualado em -16 LUFS.
@@ -82,6 +82,12 @@ python3 -m venv .venv            # se ainda não existir (o iniciar.command tamb
 ```
 
 Os testes não usam a rede (a voz é substituída por um motor falso).
+
+### Atualização 1.2.0
+
+- Atualiza o `edge-tts` para 7.3.1: a Microsoft passou a recusar a versão anterior (erro 403).
+- Adiciona o botão “Verificar serviço de voz”, que testa a voz e informa se já existe versão nova do `edge-tts` quando a Microsoft muda o acesso.
+- Explica o erro 403 em português e deixa de repetir a tentativa quando a Microsoft recusa a conexão.
 
 ### Atualização 1.1.0
 
@@ -105,6 +111,18 @@ Sem `--instalar`, o aplicativo fica em `dist/Texto em Áudio.app`. Com `--instal
 
 Se o ffmpeg do Homebrew estiver temporariamente quebrado por uma atualização de dependências, a construção aceita `--ffmpeg-dir PASTA` com binários funcionais e suas bibliotecas. O aplicativo instalado usa suas próprias cópias.
 
+### Quando a Microsoft mudar o acesso às vozes
+
+O aplicativo leva uma cópia própria do `edge-tts`. Quando a Microsoft muda o acesso às vozes, essa cópia passa a receber erro 403 e só uma versão nova da biblioteca resolve. O botão “Verificar serviço de voz” mostra se a Microsoft está recusando a conexão e se essa versão já foi publicada. A verificação envia só uma frase genérica de teste à Microsoft e consulta o PyPI; ela não baixa nem instala nada.
+
+Com a correção publicada, atualize a biblioteca, ajuste `edge-tts` em `requirements.txt` e `requirements-lock.txt` para a nova versão, rode os testes e reconstrua o aplicativo com os comandos da seção anterior:
+
+```bash
+.venv/bin/python -m pip install -U edge-tts
+```
+
+Se ainda não houver correção, aguarde: ela costuma sair em poucos dias.
+
 ## Estrutura
 
 ```
@@ -113,6 +131,7 @@ texto_audio/
   dados.py        abreviações, siglas, latim, estados
   blocos.py       divide em trechos e define as pausas
   motores.py      motor de voz (edge-tts); ponto de troca de provedor
+  verificacao.py  testa a voz e procura versão nova do edge-tts
   audio.py        ffmpeg: apara silêncio, junta, iguala volume
   pipeline.py     orquestra tudo e reporta progresso
   extrair.py      lê .txt, .docx e .pdf

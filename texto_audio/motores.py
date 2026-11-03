@@ -11,6 +11,7 @@ import asyncio
 from pathlib import Path
 from typing import Protocol
 
+import aiohttp
 import edge_tts
 
 VOZ_PADRAO = "pt-BR-AntonioNeural"
@@ -25,6 +26,20 @@ VOZES = {
 
 class ErroSintese(Exception):
     """Falha ao gerar a voz (rede, serviço fora do ar, texto recusado)."""
+
+
+class VozRecusada(ErroSintese):
+    """A Microsoft recusou a conexão (HTTP 403).
+
+    Acontece quando ela muda o acesso às vozes e o `edge-tts` embutido fica
+    desatualizado. Repetir não adianta: só uma versão nova da biblioteca resolve.
+    """
+
+    def __init__(self):
+        super().__init__(
+            "A Microsoft recusou a conexão com o serviço de voz (erro 403). "
+            "Isso costuma acontecer quando ela muda o acesso às vozes. Use "
+            "“Verificar serviço de voz” para saber se já há correção.")
 
 
 class Motor(Protocol):
@@ -60,6 +75,9 @@ class MotorEdge:
             except Exception as erro:          # rede, websocket, timeout
                 ultimo_erro = erro
                 destino.unlink(missing_ok=True)
+                if (isinstance(erro, aiohttp.WSServerHandshakeError)
+                        and erro.status == 403):
+                    raise VozRecusada() from erro
                 if tentativa + 1 < self.tentativas:
                     await asyncio.sleep(1.5 * (tentativa + 1))
         raise ErroSintese(

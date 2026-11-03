@@ -14,7 +14,7 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
-from . import __version__
+from . import __version__, verificacao
 from .audio import ErroAudio
 from .blocos import dividir
 from .caminhos import ARQUIVO_PRONUNCIAS, PAGINA, PASTA_SAIDAS
@@ -261,6 +261,12 @@ async def amostra(voz: str = VOZ_PADRAO, velocidade: int = 0):
         dados = destino.read_bytes()
     return Response(dados, media_type="audio/mpeg",
                     headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/verificar")
+async def verificar_voz():
+    """Testa a voz da Microsoft e procura no PyPI uma versão nova do edge-tts."""
+    return await verificacao.verificar()
 
 
 @app.post("/api/extrair")
