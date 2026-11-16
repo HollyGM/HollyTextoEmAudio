@@ -19,7 +19,7 @@ from .audio import ErroAudio
 from .blocos import dividir
 from .caminhos import ARQUIVO_PRONUNCIAS, PAGINA, PASTA_SAIDAS
 from .extrair import ArquivoNaoSuportado, extrair_texto
-from .motores import VOZ_PADRAO, VOZES, ErroSintese, MotorEdge
+from .motores import VOZ_PADRAO, VOZES, ErroSintese, MotorEdge, MotorLocal, eh_voz_local
 from .normalizar import Opcoes, carregar_pronuncias, contar_palavras, normalizar
 from .pipeline import Configuracao, estimar_minutos, gerar_audio
 
@@ -169,7 +169,8 @@ def pagina():
 @app.get("/api/vozes")
 def vozes():
     return {"padrao": VOZ_PADRAO,
-            "vozes": [{"id": k, "nome": v} for k, v in VOZES.items()]}
+            "vozes": [{"id": k, "nome": v, "local": eh_voz_local(k)}
+                      for k, v in VOZES.items()]}
 
 
 @app.get("/api/info")
@@ -255,7 +256,8 @@ async def amostra(voz: str = VOZ_PADRAO, velocidade: int = 0):
     with tempfile.TemporaryDirectory(prefix="texto-audio-") as tmp:
         destino = Path(tmp) / "amostra.mp3"
         try:
-            await MotorEdge().sintetizar(AMOSTRA, destino, voz, velocidade)
+            motor = MotorLocal() if eh_voz_local(voz) else MotorEdge()
+            await motor.sintetizar(AMOSTRA, destino, voz, velocidade)
         except ErroSintese as erro:
             raise HTTPException(502, str(erro)) from erro
         dados = destino.read_bytes()

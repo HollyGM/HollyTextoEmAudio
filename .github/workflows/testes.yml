@@ -1,0 +1,72 @@
+name: Testes
+
+# Testes e auditoria a cada envio e toda segunda-feira (vulnerabilidades novas
+# aparecem sem mudança no código). Na execução semanal, também testa a voz da
+# Microsoft com uma frase genérica: se ela mudar o acesso (erro 403), a falha
+# chega por e-mail antes de alguém precisar gerar um áudio.
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 11 * * 1"   # segunda-feira, 8h em Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: macOS · Python 3.14
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Instalar ffmpeg
+        run: brew install ffmpeg
+      - name: Instalar dependências (as mesmas versões do aplicativo)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-lock.txt
+          python -m pip install -r requirements-dev.txt
+      - name: Testes automáticos (sem rede)
+        run: python -m pytest tests -q
+      - name: Vulnerabilidades conhecidas nas versões do aplicativo
+        run: |
+          python -m pip install pip-audit
+          pip-audit -r requirements-lock.txt --no-deps --disable-pip --progress-spinner off
+
+  voz:
+    name: Serviço de voz da Microsoft
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Instalar dependências (as mesmas versões do aplicativo)
+        run: python -m pip install -r requirements-lock.txt
+      - name: Testar a voz com a frase genérica
+        run: |
+          python - <<'EOF'
+          import asyncio
+          import sys
+
+          from texto_audio import verificacao
+
+          resultado = asyncio.run(verificacao.verificar())
+          print(resultado["mensagem"])
+          if resultado["atualizacao_disponivel"]:
+              print(f"::warning::Há edge-tts {resultado['publicada']} (o app usa a "
+                    f"{resultado['instalada']}).")
+          if resultado["voz"] != "ok":
+              print("::error::A voz da Microsoft não funcionou: " + resultado["mensagem"])
+              sys.exit(1)
+          EOF

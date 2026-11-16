@@ -13,7 +13,7 @@ from typing import Callable
 
 from . import audio
 from .blocos import dividir
-from .motores import VOZ_PADRAO, ErroSintese, Motor, MotorEdge
+from .motores import VOZ_PADRAO, ErroSintese, Motor, MotorEdge, MotorLocal, eh_voz_local
 from .normalizar import Opcoes, contar_palavras, normalizar
 
 # Palavras por minuto de fala pura (sem pausas) na velocidade 0. Medido com as
@@ -61,7 +61,7 @@ def nome_de_arquivo(titulo: str) -> str:
 async def gerar_audio(texto: str, pasta: Path, cfg: Configuracao,
                       motor: Motor | None = None,
                       progresso: Progresso | None = None) -> Resultado:
-    motor = motor or MotorEdge()
+    motor = motor or (MotorLocal() if eh_voz_local(cfg.voz) else MotorEdge())
     avisar = progresso or (lambda fracao, msg: None)
 
     avisar(0.0, "Preparando o texto")

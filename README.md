@@ -8,18 +8,18 @@ Transforma petições e textos de sustentação oral em **MP3 com leitura natura
 
 Não é só "texto para voz": antes de falar, o programa reescreve o texto do jeito que um advogado o diria em voz alta. `art. 5º, § 1º` vira "artigo quinto, parágrafo primeiro"; `Lei nº 8.078/90` vira "Lei número oito mil e setenta e oito, de mil novecentos e noventa"; `R$ 10.000,00 (dez mil reais)` é lido uma vez só.
 
-Diferente das outras ferramentas da suíte, a voz vem de um serviço online: **o texto sai do computador**. Leia [Sigilo](#limites-que-você-precisa-conhecer) antes de usar com peças sigilosas.
+Diferente das outras ferramentas da suíte, as vozes principais vêm de um serviço online: **com elas, o texto sai do computador**. Para peças sigilosas, use a voz **Luciana (neste Mac, sem internet)**. Leia [Sigilo](#limites-que-você-precisa-conhecer) antes de usar com peças sigilosas.
 
 ## Como usar
 
-**Aplicativo para Mac (recomendado):** abra **Texto em Áudio** na pasta **Aplicativos**. A versão 1.1.0 tem janela própria, menus e ícone e incorpora Python, as dependências e as ferramentas de áudio. A síntese de voz exige internet. Você pode arrastar o aplicativo para o Dock.
+**Aplicativo para Mac (recomendado):** abra **Texto em Áudio** na pasta **Aplicativos**. O aplicativo tem janela própria, menus e ícone e incorpora Python, as dependências e as ferramentas de áudio. As vozes Antônio, Francisca e Thalita exigem internet; a voz Luciana funciona sem ela. Você pode arrastar o aplicativo para o Dock.
 
 Os MP3s do aplicativo ficam em `~/Music/Texto em Áudio/` (pasta Música). O menu **Arquivo → Abrir Pasta dos MP3** abre essa pasta. As pronúncias e preferências ficam em `~/Library/Application Support/Texto em Áudio/`; o texto das peças não é salvo nas preferências. **Arquivo → Editar Pronúncias** abre o arquivo de pronúncias, e **Exibir → Abrir Registro do Aplicativo** mostra o log em `~/Library/Logs/Texto em Áudio/`. Fechar o aplicativo encerra o servidor local; se houver uma conversão em andamento, o aplicativo pergunta antes de interrompê-la.
 
 **Pela interface no navegador:** dê duplo clique em `iniciar.command`. Na primeira vez ele cria o ambiente `.venv` e instala as dependências; depois abre o navegador em `http://127.0.0.1:8765`. Esse modo usa Python e ffmpeg instalados no computador.
 
 1. Cole o texto ou envie um arquivo `.docx`, `.pdf` ou `.txt`.
-2. Escolha a voz e a velocidade. **Ouvir amostra** toca uma frase de teste.
+2. Escolha a voz e a velocidade. **Ouvir amostra** toca uma frase de teste. Abaixo da voz, a tela informa se ela envia o texto à Microsoft ou se é gerada neste Mac.
 3. Se tiver um tempo de tribuna (ex.: 15 min), digite-o: o programa diz se o texto cabe e, se não couber, qual velocidade resolve.
 4. Abra **Ver como o texto será lido** e confira números, siglas e expressões latinas.
 5. **Gerar MP3**. No aplicativo, o arquivo fica na pasta Música → Texto em Áudio; na execução pelo código, na pasta `saidas/`. A interface mostra o caminho completo.
@@ -30,7 +30,7 @@ Os MP3s do aplicativo ficam em `~/Music/Texto em Áudio/` (pasta Música). O men
 .venv/bin/python -m texto_audio gerar minha-peca.docx --velocidade 10 --omitir-referencias
 ```
 
-Opções: `--voz`, `--velocidade` (-50 a 100, em %), `--pausa` (ms entre parágrafos), `--siglas extenso|letras`, `--omitir-referencias`, `--sem-normalizar-volume`, `--titulo`, `-o`/`--saida` (pasta de destino; padrão `saidas/`).
+Opções: `--voz` (`local:Luciana` para gerar sem internet), `--velocidade` (-50 a 100, em %), `--pausa` (ms entre parágrafos), `--siglas extenso|letras`, `--omitir-referencias`, `--sem-normalizar-volume`, `--titulo`, `-o`/`--saida` (pasta de destino; padrão `saidas/`).
 
 ## O que a normalização faz
 
@@ -64,7 +64,8 @@ Os respellings de latim em `dados.py` (`PRONUNCIAS_PADRAO`, como "cápute" para 
 
 ## Limites que você precisa conhecer
 
-- **Sigilo.** A voz vem do serviço online de voz neural da Microsoft (biblioteca `edge-tts`), e **o texto é enviado a esses servidores**. Não use, como está, para peças sob segredo de justiça ou com dados sensíveis. O restante (normalização, montagem do MP3, interface) roda só neste computador, e o servidor escuta apenas em `127.0.0.1`. Para trocar por um motor local ou por uma API contratada (Azure, Google, OpenAI, ElevenLabs, Piper), escreva uma classe com o método `sintetizar` em `texto_audio/motores.py`: o resto do programa não muda.
+- **Sigilo.** As vozes Antônio, Francisca e Thalita vêm do serviço online de voz neural da Microsoft (biblioteca `edge-tts`), e **o texto é enviado a esses servidores**. Não as use para peças sob segredo de justiça ou com dados sensíveis.
+- **Voz sem internet.** A voz **Luciana (neste Mac, sem internet)** é gerada pelo próprio macOS (comando `say`): o texto não sai do computador. Ela soa menos natural que as vozes neurais. Se não estiver instalada, o aplicativo explica onde instalá-la (Ajustes do Sistema > Acessibilidade > Conteúdo Falado > Voz do sistema > Gerenciar Vozes > Português (Brasil)). O restante (normalização, montagem do MP3, interface) roda só neste computador, e o servidor escuta apenas em `127.0.0.1`. Para acrescentar outro motor (Azure, Google, OpenAI, ElevenLabs, Piper), escreva uma classe com o método `sintetizar` em `texto_audio/motores.py`.
 - **Serviço não oficial.** O `edge-tts` usa o recurso "ler em voz alta" do Edge sem chave de API; a Microsoft pode alterá-lo ou limitá-lo a qualquer momento. Se a voz parar com erro 403, use o botão “Verificar serviço de voz” e siga [Quando a Microsoft mudar o acesso às vozes](#quando-a-microsoft-mudar-o-acesso-às-vozes).
 - **Estimativa de duração** é aproximada: errou cerca de 2% nos dois textos usados para calibrá-la, e em outros textos pode variar mais. A duração real aparece depois de gerar.
 - **PDF escaneado** (imagem) não tem texto: faça OCR antes. **`.doc` antigo** não é lido: salve como `.docx`.
@@ -81,7 +82,15 @@ python3 -m venv .venv            # se ainda não existir (o iniciar.command tamb
 .venv/bin/python -m pytest tests -q
 ```
 
-Os testes não usam a rede (a voz é substituída por um motor falso).
+Os testes não usam a rede (a voz é substituída por um motor falso). Um teste usa a voz Luciana de verdade quando ela está instalada.
+
+No GitHub, os testes e a busca de vulnerabilidades conhecidas (`pip-audit`) rodam a cada envio e toda segunda-feira. Na execução semanal, a voz da Microsoft também é testada com uma frase genérica; se ela mudar o acesso (erro 403), a falha chega por e-mail do GitHub.
+
+### Atualização 1.3.0
+
+- Acrescenta a voz **Luciana (neste Mac, sem internet)**, gerada pelo macOS: o texto não sai do computador. A tela informa, abaixo da voz escolhida, se ela envia o texto à Microsoft.
+- Atualiza bibliotecas com falhas de segurança conhecidas: `certifi` 2026.10.23 (deixa de confiar em certificados intermediários comprometidos, que valiam na conexão com a Microsoft), `aiohttp` 3.14.5, `pypdf` 6.21.4 e `opentelemetry-api` 1.45.2.
+- Testes automáticos no GitHub, com verificação semanal do serviço de voz.
 
 ### Atualização 1.2.0
 
@@ -130,7 +139,7 @@ texto_audio/
   normalizar.py   texto jurídico -> texto falado
   dados.py        abreviações, siglas, latim, estados
   blocos.py       divide em trechos e define as pausas
-  motores.py      motor de voz (edge-tts); ponto de troca de provedor
+  motores.py      motores de voz: edge-tts (online) e macOS say (local)
   verificacao.py  testa a voz e procura versão nova do edge-tts
   audio.py        ffmpeg: apara silêncio, junta, iguala volume
   pipeline.py     orquestra tudo e reporta progresso

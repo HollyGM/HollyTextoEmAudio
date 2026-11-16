@@ -49,13 +49,13 @@ def verificar(app: Path, online: bool = False) -> None:
                 assert "mil reais" in preparo["texto_falado"]
                 assert "artigo quinto" in preparo["texto_falado"]
                 info = obter("/api/info")
-                assert info["versao"] == "1.2.0"
+                assert info["versao"] == "1.3.0"
                 assert info["pasta_saidas"] == str(raiz / "audios")
                 assert (raiz / "dados/pronuncias.txt").exists()
                 print("App empacotado: interface, API, pronúncias e normalização OK.")
-                if online:
-                    tarefa = obter("/api/audio", {"texto": "Teste de funcionamento do aplicativo Texto em Áudio.",
-                                                   "titulo": "Teste do aplicativo"})["id"]
+
+                def gerar(pedido: dict) -> int:
+                    tarefa = obter("/api/audio", pedido)["id"]
                     inicio = time.monotonic()
                     while True:
                         resultado = obter(f"/api/audio/{tarefa}")
@@ -64,13 +64,27 @@ def verificar(app: Path, online: bool = False) -> None:
                         if resultado["status"] == "pronto":
                             break
                         if time.monotonic() - inicio > 90:
-                            raise TimeoutError("A geração online não terminou em 90 segundos.")
+                            raise TimeoutError("A geração não terminou em 90 segundos.")
                         time.sleep(0.5)
                     mp3 = obter(f"/api/audio/{tarefa}/arquivo")
                     assert len(mp3) == resultado["tamanho_bytes"] > 1000
                     assert resultado["duracao_s"] > 1
                     assert (raiz / "audios" / resultado["arquivo"]).read_bytes() == mp3
-                    print(f"Voz online + ffmpeg incorporado + download OK ({len(mp3)} bytes).")
+                    return len(mp3)
+
+                if any(v["id"] == "local:Luciana" and v["local"] for v in vozes["vozes"]):
+                    try:
+                        tamanho = gerar({"texto": "Teste da voz local do aplicativo Texto em Áudio.",
+                                         "titulo": "Teste local", "voz": "local:Luciana"})
+                        print(f"Voz local (sem internet) + ffmpeg incorporado + download OK ({tamanho} bytes).")
+                    except RuntimeError as erro:
+                        if "não está instalada" not in str(erro):
+                            raise
+                        print("Voz local não testada: a Luciana não está instalada neste Mac.")
+                if online:
+                    tamanho = gerar({"texto": "Teste de funcionamento do aplicativo Texto em Áudio.",
+                                     "titulo": "Teste do aplicativo"})
+                    print(f"Voz online + ffmpeg incorporado + download OK ({tamanho} bytes).")
                     diagnostico = obter("/api/verificar")
                     assert diagnostico["voz"] == "ok", diagnostico["mensagem"]
                     assert diagnostico["publicada"], diagnostico["mensagem"]

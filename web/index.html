@@ -111,6 +111,7 @@
         <select id="voz"></select>
         <button type="button" id="amostra">Ouvir amostra</button>
       </div>
+      <p class="suave" id="aviso-voz" role="status"></p>
       <audio id="player-amostra" controls hidden></audio>
       <p class="erro" id="erro-amostra" role="alert" hidden></p>
 
@@ -179,9 +180,9 @@
 </main>
 
 <footer>
-  O texto é processado neste computador, mas a voz é gerada pelo serviço online da Microsoft (edge-tts),
-  que recebe o texto. Não use para peças sob sigilo sem antes trocar por um motor local.
-  Só o MP3 é gravado em disco; o texto não.
+  O texto é processado neste computador. Com as vozes Antônio, Francisca e Thalita, a voz é gerada pelo
+  serviço online da Microsoft (edge-tts), que recebe o texto: para peças sob sigilo, use a voz Luciana,
+  gerada neste Mac sem internet. Só o MP3 é gravado em disco; o texto não.
 </footer>
 
 <script>
@@ -484,17 +485,25 @@ function mostrarResultado(id, s) {
 
 // ---- início -------------------------------------------------------------------
 let padraoVoz = "";
+const vozesLocais = new Set();
+function avisoVoz() {
+  $("aviso-voz").textContent = vozesLocais.has($("voz").value)
+    ? "Esta voz é gerada neste Mac: o texto não sai do computador."
+    : "Esta voz envia o texto ao serviço online da Microsoft.";
+}
 async function iniciar() {
   try {
     const r = await (await requisitar("/api/vozes")).json();
     for (const v of r.vozes) {
       const o = document.createElement("option");
       o.value = v.id; o.textContent = v.nome; $("voz").appendChild(o);
+      if (v.local) vozesLocais.add(v.id);
     }
     $("voz").value = r.padrao; padraoVoz = r.padrao;
   } catch (e) { $("erro").textContent = "Não consegui falar com o servidor."; $("erro").hidden = false; }
   restaurar();
   if (!$("voz").value) $("voz").value = padraoVoz;   // voz salva que não existe mais
+  avisoVoz();
   rotuloVelocidade();
   $("texto").addEventListener("input", () => {
     revisaoTexto++;
@@ -509,6 +518,7 @@ async function iniciar() {
     $(id).addEventListener("input", () => {
       guardar();
       if (id === "velocidade") rotuloVelocidade();
+      if (id === "voz") avisoVoz();
       if (id === "limite") atualizarEstimativa(); else agendarPreparo();
     });
   }

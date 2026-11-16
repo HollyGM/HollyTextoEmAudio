@@ -29,15 +29,18 @@ def _exigir(programa: str) -> str:
     return caminho
 
 
-async def _rodar(*args: str) -> str:
+async def _rodar(*args: str, entrada: bytes | None = None) -> str:
+    """Roda um programa; `entrada` vai pela entrada padrão (nunca na linha de comando)."""
     try:
         proc = await asyncio.create_subprocess_exec(
-            *args, stdin=asyncio.subprocess.DEVNULL,
+            *args,
+            stdin=(asyncio.subprocess.PIPE if entrada is not None
+                   else asyncio.subprocess.DEVNULL),
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     except OSError as erro:
         raise ErroAudio(f"Não consegui executar '{args[0]}': {erro}") from erro
     try:
-        saida, erro = await proc.communicate()
+        saida, erro = await proc.communicate(entrada)
     except BaseException:
         if proc.returncode is None:
             try:
@@ -49,6 +52,14 @@ async def _rodar(*args: str) -> str:
     if proc.returncode != 0:
         raise ErroAudio(erro.decode("utf-8", "replace")[-600:])
     return saida.decode("utf-8", "replace")
+
+
+async def para_mp3(origem: Path, destino: Path) -> None:
+    """Converte a voz local (AIFF) no mesmo formato que o serviço online devolve."""
+    await _rodar(
+        _exigir("ffmpeg"), "-y", "-loglevel", "error", "-i", str(origem),
+        "-ar", str(TAXA), "-ac", "1", "-c:a", "libmp3lame", "-b:a", "128k",
+        "-f", "mp3", str(destino))
 
 
 async def silencio(ms: int, destino: Path) -> None:
